@@ -19,12 +19,11 @@ import numpy as np
 
 # Optional plotting/PDF deps
 try:
-    import mplfinance as mpf
-    from reportlab.lib.pagesizes import A4
-    from reportlab.pdfgen import canvas
-    from reportlab.lib.units import cm
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.pdfbase.ttfonts import TTFont
+    # Intentionally disabled to save space on Vercel
+    # import mplfinance as mpf
+    # from reportlab.lib.pagesizes import A4
+    # ...
+    raise ImportError("PDF generation disabled for lightweight deployment")
     HAVE_REPORT = True
 except Exception:
     HAVE_REPORT = False
