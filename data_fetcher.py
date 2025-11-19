@@ -82,7 +82,38 @@ class DataFetcher:
                     df['date'] = pd.to_datetime(df['date'])
                     mask = (df['date'] >= start_date) & (df['date'] <= end_date)
                     df = df.loc[mask].copy()
-                    
+
+                    # 处理美股的周K/月K重采样 (Resampling)
+                    if period in ['weekly', 'monthly']:
+                        # 设置日期索引
+                        df.set_index('date', inplace=True)
+                        
+                        # 确定重采样规则 (W=周, M=月)
+                        # W-FRI 表示每周五结束
+                        rule = 'W-FRI' if period == 'weekly' else 'M'
+                        
+                        agg_dict = {
+                            'open': 'first',
+                            'high': 'max',
+                            'low': 'min',
+                            'close': 'last',
+                            'volume': 'sum'
+                        }
+                        # 如果 amount 存在则聚合
+                        if 'amount' in df.columns:
+                            agg_dict['amount'] = 'sum'
+                        # 只有 volume > 0 的行才有效 (避免引入假期产生的空行)
+                        # 但 resample 会生成所有周期，需 dropna
+                        
+                        df_resampled = df.resample(rule).agg(agg_dict)
+                        df_resampled.dropna(subset=['open', 'close'], inplace=True) # 移除无交易数据的周期
+                        
+                        # 重算涨跌幅
+                        df_resampled['change_pct'] = df_resampled['close'].pct_change() * 100
+                        
+                        # 重置索引，让 date 变回列
+                        df = df_resampled.reset_index()
+
                     # 转回字符串格式 YYYY-MM-DD
                     df['date'] = df['date'].dt.strftime('%Y-%m-%d')
                     
