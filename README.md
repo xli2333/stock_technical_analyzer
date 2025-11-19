@@ -1,4 +1,4 @@
-# ValueCell 股票技术分析系统 (Stock Technical Analyzer)
+# 股票技术分析系统 (Stock Technical Analyzer)
 
 ## 项目简介
 这是一个专业级的 A 股股票技术分析系统，结合了现代化的 React 前端界面与强大的 Python 后端分析能力。系统基于 `akshare` 获取实时数据，利用 `talib` 进行深度技术指标计算，提供多周期分析、智能评分及交易信号提示。
