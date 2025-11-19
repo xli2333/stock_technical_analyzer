@@ -141,26 +141,29 @@ class DataFetcher:
     def get_stock_info(self, symbol: str) -> Optional[dict]:
         """
         Fetch stock basic info (Name, Code).
-        Currently simplified to return symbol as name to avoid timeout 
-        caused by fetching full A-share list.
         """
         # 美股直接返回代码
         if not symbol.isdigit():
              return {'code': symbol, 'name': symbol}
 
-        # A股直接返回代码 (暂时跳过全量查询以优化速度)
+        # A股: 尝试使用个股详情接口 (Method 1)
+        # 这个接口只查询单只股票，速度快，不查全量列表
+        try:
+            df = ak.stock_individual_info_em(symbol=symbol)
+            # 返回的 DataFrame 通常有 item 和 value 两列
+            # 我们寻找 item 为 '股票简称' 的那一行
+            if df is not None and not df.empty:
+                # 过滤出股票简称
+                name_row = df[df['item'] == '股票简称']
+                if not name_row.empty:
+                    stock_name = name_row.iloc[0]['value']
+                    return {'code': symbol, 'name': stock_name}
+        except Exception as e:
+            print(f"[!] Name fetch error (Method 1): {e}")
+            # 出错时不崩溃，直接回退
+
+        # Fallback: 如果获取失败，直接返回代码
         return {'code': symbol, 'name': symbol}
-        
-        # Legacy code commented out for performance
-        # try:
-        #     all_stocks = ak.stock_info_a_code_name()
-        #     stock_info = all_stocks[all_stocks['code'] == symbol]
-        #     if len(stock_info) == 0:
-        #         return {'code': symbol, 'name': symbol}
-        #     return {'code': symbol, 'name': stock_info.iloc[0]['name']}
-        # except Exception as e:
-        #     print(f"[!] Info fetch error: {e}")
-        #     return {'code': symbol, 'name': symbol}
 
     def get_stock_list(self) -> pd.DataFrame:
         """
