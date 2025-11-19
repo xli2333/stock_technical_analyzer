@@ -7,7 +7,6 @@ FROM python:3.12-slim
 # - libta-lib0: Run-time TA-Lib dependency (optional if using manylinux wheels, but safe to have)
 RUN apt-get update && apt-get install -y \
     fonts-wqy-microhei \
-    ttf-wqy-microhei \
     fontconfig \
     gcc \
     && rm -rf /var/lib/apt/lists/*
