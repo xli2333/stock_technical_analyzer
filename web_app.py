@@ -30,17 +30,18 @@ except Exception:
     HAVE_REPORT = False
 
 # Configure Chinese Fonts
+# Default to standard font (Chinese might not show correctly in PDF on Linux without custom font,
+# but Web UI will work fine).
 CHINESE_FONT = 'Helvetica'
 if HAVE_REPORT:
     try:
-        # Use relative path for font (supports Vercel/Docker/Windows)
-        # Updated to use HarmonyOS Sans SC Regular - JUST ONE FILE to save space
+        # Try to load custom font if available (e.g. local dev), otherwise skip to save space
         font_path = os.path.join(os.path.dirname(__file__), 'HarmonyOS Sans', 'HarmonyOS_Sans_SC', 'HarmonyOS_Sans_SC_Regular.ttf')
         if os.path.exists(font_path):
             pdfmetrics.registerFont(TTFont('HarmonyOS', font_path))
             CHINESE_FONT = 'HarmonyOS'
         else:
-             print(f"Warning: Font file not found at {font_path}")
+             print(f"Info: Custom font not found at {font_path}, using default {CHINESE_FONT}")
     except Exception as e:
         print(f"Warning: Could not register Chinese font: {e}")
 
