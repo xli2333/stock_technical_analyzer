@@ -18,9 +18,6 @@ from typing import Optional
 # 默认获取天数改为 400 天（自然日），以确保能计算年线(MA250)
 DEFAULT_DAYS = 400 
 DEFAULT_ADJUST = 'qfq'
-
-# 强制代理地址
-PROXY_URL = "http://127.0.0.1:7897"
 # ===========================================
 
 class DataFetcher:
@@ -31,22 +28,9 @@ class DataFetcher:
     - US Stocks (Ticker symbols, e.g., 'AAPL', 'NVDA')
     """
 
-    def __init__(self, use_proxy: bool = True):
+    def __init__(self, use_proxy: bool = False):
+        # In Render/Cloud environment, usually no proxy is needed.
         pass
-
-    def _force_proxy_env(self):
-        """
-        强制设置当前运行环境的代理，确保能连接到数据源（特别是美股）。
-        """
-        # 1. 清除可能干扰的 NO_PROXY
-        if 'NO_PROXY' in os.environ: del os.environ['NO_PROXY']
-        if 'no_proxy' in os.environ: del os.environ['no_proxy']
-        
-        # 2. 强制设置 HTTP 和 HTTPS 代理
-        os.environ['HTTP_PROXY'] = PROXY_URL
-        os.environ['HTTPS_PROXY'] = PROXY_URL
-        os.environ['http_proxy'] = PROXY_URL
-        os.environ['https_proxy'] = PROXY_URL
 
     def get_stock_data(
         self,
@@ -58,9 +42,6 @@ class DataFetcher:
         """
         Fetch historical stock data. Auto-detects A-Share vs US-Stock.
         """
-        # 强制应用代理
-        self._force_proxy_env()
-
         end_date = datetime.now()
         
         # Calculate start date
@@ -84,7 +65,11 @@ class DataFetcher:
             df = None
             if is_us_stock:
                 # === 美股接口 (ak.stock_us_daily) ===
-                df = ak.stock_us_daily(symbol=symbol, adjust=adjust)
+                try:
+                    df = ak.stock_us_daily(symbol=symbol, adjust=adjust)
+                except Exception as e:
+                    print(f"Akshare US fetch error: {e}")
+                    return None
                 
                 if df is not None and not df.empty:
                     # 统一列名
@@ -107,13 +92,19 @@ class DataFetcher:
 
             else:
                 # === A股接口 (ak.stock_zh_a_hist) ===
-                df = ak.stock_zh_a_hist(
-                    symbol=symbol,
-                    period=period,
-                    start_date=start_date_str,
-                    end_date=end_date_str,
-                    adjust=adjust
-                )
+                try:
+                    df = ak.stock_zh_a_hist(
+                        symbol=symbol,
+                        period=period,
+                        start_date=start_date_str,
+                        end_date=end_date_str,
+                        adjust=adjust
+                    )
+                except Exception as e:
+                    print(f"Akshare CN fetch error: {e}")
+                    # Fallback or check if symbol is valid?
+                    return None
+
                 if df is not None and not df.empty:
                     # 统一列名
                     df.rename(columns={
@@ -125,7 +116,7 @@ class DataFetcher:
 
             # === 通用数据清洗 ===
             if df is None or df.empty:
-                print(f"[!] Data for {symbol} is empty. Check symbol or proxy.")
+                print(f"[!] Data for {symbol} is empty. Check symbol or network.")
                 return None
 
             # 确保数值列为 float 类型
@@ -135,8 +126,10 @@ class DataFetcher:
                     df[col] = pd.to_numeric(df[col], errors='coerce')
 
             # 确保 date 是字符串 (YYYY-MM-DD)
-            if not isinstance(df['date'].iloc[0], str):
-                 df['date'] = df['date'].apply(lambda x: x.strftime('%Y-%m-%d') if hasattr(x, 'strftime') else str(x))
+            if not df.empty and 'date' in df.columns:
+                first_date = df['date'].iloc[0]
+                if not isinstance(first_date, str):
+                     df['date'] = df['date'].apply(lambda x: x.strftime('%Y-%m-%d') if hasattr(x, 'strftime') else str(x))
 
             print(f"[OK] Successfully fetched {len(df)} rows")
             return df
@@ -149,14 +142,13 @@ class DataFetcher:
         """
         Fetch stock basic info (Name, Code).
         """
-        self._force_proxy_env()
-        
         # 美股直接返回代码
         if not symbol.isdigit():
              return {'code': symbol, 'name': symbol}
 
         # A股尝试查询名称
         try:
+            # ak.stock_info_a_code_name() 可能会比较慢或失败，可以考虑缓存或简化
             all_stocks = ak.stock_info_a_code_name()
             stock_info = all_stocks[all_stocks['code'] == symbol]
 
@@ -176,7 +168,6 @@ class DataFetcher:
         """
         Get list of supported stocks (A-Share only).
         """
-        self._force_proxy_env()
         try:
             return ak.stock_info_a_code_name()
         except Exception as e:
