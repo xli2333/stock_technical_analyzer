@@ -105,7 +105,8 @@ def analyze():
         if period == 'monthly': days = 2000
         
         if not analyzer.analyze(symbol, days=days, period=period):
-            return jsonify({'error': 'Analysis failed, check symbol or network'}), 400
+            error_msg = analyzer.last_error or 'Analysis failed, check symbol or network'
+            return jsonify({'error': error_msg}), 400
 
         # OHLCV for charting
         try:

@@ -48,57 +48,84 @@ class StockAnalyzer:
         self.signals = None
         self.extra_indicators = None
         self.综合评分 = None
+        self.last_error = None  # Store specific error messages
 
     def analyze(self, symbol: str, days: int = 120, period: str = "daily") -> bool:
         """Run full analysis pipeline."""
-
-        # 1) stock info
-        self.stock_info = self.fetcher.get_stock_info(symbol)
-        if not self.stock_info:
-            print("无法获取股票信息")
-            return False
-
-        # 2) OHLCV data
-        self.data = self.fetcher.get_stock_data(symbol, days=days, period=period)
-        if self.data is None or len(self.data) == 0:
-            print("无法获取历史数据")
-            return False
-
-        # 3) technical indicators
-        indicator_calc = TechnicalIndicators(self.data)
-        self.indicators = indicator_calc.calculate_all()
-
-        # 4) patterns
-        recognizer = PatternRecognizer(self.data)
-        self.patterns = recognizer.detect_all_patterns()
-
-        # 5) base signals + score (legacy)
-        base_signal_gen = SignalGenerator(self.data, self.indicators, self.patterns)
-        base_signals = base_signal_gen.generate_all_signals()
-
-        # 6) advanced indicators + signals + score
-        extra_ind = {}
+        self.last_error = None
+        
         try:
-            extra_ind.update(compute_supertrend(self.data))
-            extra_ind.update(compute_ichimoku(self.data))
-            extra_ind.update(compute_donchian(self.data))
-            extra_ind.update(compute_keltner(self.data))
-            extra_ind.update(compute_moneyflow(self.data))
-            extra_ind.update(compute_momentum_extra(self.data))
-            extra_ind.update(compute_vwma(self.data))
-            extra_ind.update(compute_fibonacci_levels(self.data))
-            extra_ind.update(compute_regime_features(self.data, self.indicators))
+            # 1) stock info
+            try:
+                self.stock_info = self.fetcher.get_stock_info(symbol)
+                if not self.stock_info:
+                    self.last_error = f"Stock info not found for symbol: {symbol}"
+                    print(self.last_error)
+                    return False
+            except Exception as e:
+                self.last_error = f"Error fetching stock info: {str(e)}"
+                print(self.last_error)
+                return False
+
+            # 2) OHLCV data
+            try:
+                self.data = self.fetcher.get_stock_data(symbol, days=days, period=period)
+                if self.data is None or len(self.data) == 0:
+                    self.last_error = f"No historical data found for {symbol} (period={period})"
+                    print(self.last_error)
+                    return False
+            except Exception as e:
+                self.last_error = f"Error fetching historical data: {str(e)}"
+                print(self.last_error)
+                return False
+
+            # 3) technical indicators
+            try:
+                indicator_calc = TechnicalIndicators(self.data)
+                self.indicators = indicator_calc.calculate_all()
+            except Exception as e:
+                 self.last_error = f"Indicator calculation failed: {str(e)}"
+                 print(self.last_error)
+                 return False
+
+            # 4) patterns
+            recognizer = PatternRecognizer(self.data)
+            self.patterns = recognizer.detect_all_patterns()
+
+            # 5) base signals + score (legacy)
+            base_signal_gen = SignalGenerator(self.data, self.indicators, self.patterns)
+            base_signals = base_signal_gen.generate_all_signals()
+
+            # 6) advanced indicators + signals + score
+            extra_ind = {}
+            try:
+                extra_ind.update(compute_supertrend(self.data))
+                extra_ind.update(compute_ichimoku(self.data))
+                extra_ind.update(compute_donchian(self.data))
+                extra_ind.update(compute_keltner(self.data))
+                extra_ind.update(compute_moneyflow(self.data))
+                extra_ind.update(compute_momentum_extra(self.data))
+                extra_ind.update(compute_vwma(self.data))
+                extra_ind.update(compute_fibonacci_levels(self.data))
+                extra_ind.update(compute_regime_features(self.data, self.indicators))
+            except Exception as e:
+                # If any advanced indicator fails, log but continue with available ones
+                print(f"Warning: Advanced indicators partial failure: {e}")
+            
+            self.extra_indicators = extra_ind
+
+            adv_gen = AdvancedSignalGenerator(self.data, self.indicators, extra_ind)
+            adv_signals = adv_gen.generate()
+            self.signals = {**base_signals, **adv_signals}
+            self.综合评分 = adv_gen.score(self.signals)
+
+            return True
+            
         except Exception as e:
-            # If any advanced indicator fails, continue with available ones
-            print(f"Advanced indicators error: {e}")
-        self.extra_indicators = extra_ind
-
-        adv_gen = AdvancedSignalGenerator(self.data, self.indicators, extra_ind)
-        adv_signals = adv_gen.generate()
-        self.signals = {**base_signals, **adv_signals}
-        self.综合评分 = adv_gen.score(self.signals)
-
-        return True
+            import traceback
+            traceback.print_exc()
+            self.last_error = f"Unexpected analyzer crash: {str(e)}"
+            return False
 
     def get_price_info(self) -> Dict:
         if self.data is None:
