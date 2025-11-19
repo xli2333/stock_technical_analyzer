@@ -30,13 +30,17 @@ except Exception:
     HAVE_REPORT = False
 
 # Configure Chinese Fonts
-CHINESE_FONT = 'SimHei'
+CHINESE_FONT = 'Helvetica'
 if HAVE_REPORT:
     try:
-        # In Vercel/Linux environment, SimHei might not be available.
-        # We set it here to satisfy the user request "change back to SimHei".
-        # If the font file is missing, ReportLab might raise an error or fallback.
-        pass 
+        # Use relative path for font (supports Vercel/Docker/Windows)
+        # Updated to use HarmonyOS Sans SC Regular - JUST ONE FILE to save space
+        font_path = os.path.join(os.path.dirname(__file__), 'HarmonyOS Sans', 'HarmonyOS_Sans_SC', 'HarmonyOS_Sans_SC_Regular.ttf')
+        if os.path.exists(font_path):
+            pdfmetrics.registerFont(TTFont('HarmonyOS', font_path))
+            CHINESE_FONT = 'HarmonyOS'
+        else:
+             print(f"Warning: Font file not found at {font_path}")
     except Exception as e:
         print(f"Warning: Could not register Chinese font: {e}")
 
