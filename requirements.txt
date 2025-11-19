@@ -14,5 +14,5 @@ gunicorn
 
 # 可选依赖（图表）
 matplotlib>=3.8.0
-mplfinance>=0.12.10
+mplfinance>=0.12.9b0
 reportlab>=4.0.0
