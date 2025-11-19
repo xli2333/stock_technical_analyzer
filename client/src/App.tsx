@@ -305,19 +305,33 @@ export default function App() {
   const [period, setPeriod] = useState('daily');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [, setError] = useState('');
+  const [error, setError] = useState(''); // Fixed destructuring to use 'error'
   
   const fetchAnalysis = async () => {
     setLoading(true);
     setError('');
+    setResult(null); // Clear previous result
     try {
       const res = await fetch(`/analyze?symbol=${symbol}&period=${period}`);
-      if (!res.ok) throw new Error('Analysis failed');
+      
+      // Handle HTTP errors (like 400, 500, 504 Gateway Timeout)
+      if (!res.ok) {
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+            const errorData = await res.json();
+            throw new Error(errorData.error || `Server Error: ${res.status}`);
+        } else {
+            const text = await res.text();
+            throw new Error(`Request failed (${res.status}): ${text.substring(0, 100)}...`);
+        }
+      }
+
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setResult(data);
     } catch (err: any) {
-      setError(err.message);
+      console.error("Fetch error:", err);
+      setError(err.message || 'Network error or timeout');
     } finally {
       setLoading(false);
     }
@@ -335,7 +349,7 @@ export default function App() {
                 
                 {/* Brand / Title - Small & Functional */}
                 <div className="col-span-12 flex justify-between border-b-4 border-black pb-4 mb-8">
-                    <h1 className="text-lg font-bold tracking-tighter text-white leading-none">StockTech</h1>
+                    <h1 className="text-lg font-bold tracking-tighter text-black leading-none">StockTech</h1>
                     <div className="text-sm font-mono">VOL. 2025 / MASTER ED.</div>
                 </div>
 
@@ -349,17 +363,21 @@ export default function App() {
                             onChange={(e) => setSymbol(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && fetchAnalysis()}
                             placeholder="CODE"
-                            className="text-8xl font-black tracking-tighter w-full bg-transparent border-none outline-none placeholder:text-gray-200 focus:placeholder:text-transparent p-0 m-0 leading-none"
+                            className="text-8xl font-black tracking-tighter w-full bg-transparent border-none outline-none placeholder:text-gray-200 focus:placeholder:text-transparent p-0 m-0 leading-none uppercase"
                         />
                      </div>
                      <div className="flex gap-4 mt-4">
-                         <button onClick={fetchAnalysis} className="bg-black text-white text-sm font-bold uppercase px-6 py-3 hover:bg-neon hover:text-black transition-colors">
-                             {loading ? 'Loading...' : 'Analyze'}
+                         <button 
+                            onClick={fetchAnalysis} 
+                            disabled={loading}
+                            className="bg-black text-white text-sm font-bold uppercase px-6 py-3 hover:bg-neon hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                         >
+                             {loading ? 'ANALYZING...' : 'ANALYZE'}
                          </button>
                          <select 
                             value={period} 
                             onChange={(e) => setPeriod(e.target.value)}
-                            className="bg-gray-100 border-none text-sm font-bold uppercase px-4 py-3 cursor-pointer"
+                            className="bg-gray-100 border-none text-sm font-bold uppercase px-4 py-3 cursor-pointer focus:ring-2 focus:ring-black outline-none"
                          >
                             <option value="daily">Daily</option>
                             <option value="weekly">Weekly</option>
@@ -385,6 +403,31 @@ export default function App() {
                     </div>
                 )}
             </header>
+            
+            {/* Error Message Display */}
+            {error && (
+                <div className="mb-8 p-4 bg-red-600 text-white font-bold tracking-tight">
+                    ERROR: {error}
+                </div>
+            )}
+            
+            {/* Loading / Empty State Messages */}
+            {result === null && !error && (
+                 <div className="mb-8">
+                    {loading && (
+                        <div className="p-4 bg-gray-100 text-gray-500 font-mono text-sm animate-pulse">
+                            Fetching data from Akshare API... This may take up to 10-20 seconds.
+                        </div>
+                    )}
+                    {/* Display 'error' state if it exists. Note that 'error' is not defined in this scope in the original snippet, 
+                        assuming it's a state variable like [error, setError] = useState(''). 
+                        Let's ensure we use the state variable 'error' if it was defined in the component.
+                        Wait, the original code had `const [, setError] = useState('');` which ignored the error state value.
+                        I need to fix the state definition first.
+                    */}
+                 </div>
+            )}
+
 
 
             {/* --- 2. Dashboard Content --- */}
