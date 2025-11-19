@@ -17,35 +17,51 @@ import tempfile
 import shutil
 import numpy as np
 
+from flask_cors import CORS
+
 # Optional plotting/PDF deps
 try:
-    # Intentionally disabled to save space on Vercel
-    # import mplfinance as mpf
-    # from reportlab.lib.pagesizes import A4
-    # ...
-    raise ImportError("PDF generation disabled for lightweight deployment")
+    import mplfinance as mpf
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.units import cm
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
     HAVE_REPORT = True
 except Exception:
     HAVE_REPORT = False
 
 # Configure Chinese Fonts
-# Default to standard font (Chinese might not show correctly in PDF on Linux without custom font,
-# but Web UI will work fine).
-CHINESE_FONT = 'Helvetica'
+CHINESE_FONT = 'Helvetica'  # Default fallback
 if HAVE_REPORT:
     try:
-        # Try to load custom font if available (e.g. local dev), otherwise skip to save space
-        font_path = os.path.join(os.path.dirname(__file__), 'HarmonyOS Sans', 'HarmonyOS_Sans_SC', 'HarmonyOS_Sans_SC_Regular.ttf')
-        if os.path.exists(font_path):
-            pdfmetrics.registerFont(TTFont('HarmonyOS', font_path))
-            CHINESE_FONT = 'HarmonyOS'
+        # Strategy for Render / Docker: Use system installed fonts (e.g. WenQuanYi Micro Hei)
+        # Common paths for fonts on Linux
+        font_paths = [
+            '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
+            '/usr/share/fonts/truetype/wqy/wqy-microhei.ttf',
+            'SimHei.ttf' # Fallback to local file if exists
+        ]
+        
+        found_font = None
+        for path in font_paths:
+            if os.path.exists(path):
+                found_font = path
+                break
+        
+        if found_font:
+            pdfmetrics.registerFont(TTFont('WenQuanYi', found_font))
+            CHINESE_FONT = 'WenQuanYi'
+            print(f"Info: Registered Chinese font from {found_font}")
         else:
-             print(f"Info: Custom font not found at {font_path}, using default {CHINESE_FONT}")
+            print("Info: No Chinese font found, using default Helvetica")
+            
     except Exception as e:
         print(f"Warning: Could not register Chinese font: {e}")
 
 
 app = Flask(__name__, static_folder='static', static_url_path='')
+CORS(app)  # Enable CORS for all routes
 
 # Ensure directories exist (for local dev mainly)
 os.makedirs('output', exist_ok=True)

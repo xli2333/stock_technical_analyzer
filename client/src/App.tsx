@@ -311,8 +311,13 @@ export default function App() {
     setLoading(true);
     setError('');
     setResult(null); // Clear previous result
+    
+    // Determine API Base URL from environment or default to relative
+    const apiBase = import.meta.env.VITE_API_URL || ''; 
+    const url = `${apiBase}/analyze?symbol=${symbol}&period=${period}`;
+
     try {
-      const res = await fetch(`/analyze?symbol=${symbol}&period=${period}`);
+      const res = await fetch(url);
       
       // Handle HTTP errors (like 400, 500, 504 Gateway Timeout)
       if (!res.ok) {

@@ -11,3 +11,9 @@ openpyxl>=3.1.0
 requests>=2.31.0
 Flask>=3.0.0
 gunicorn
+flask-cors>=4.0.0
+
+# Plotting & Reporting (Restored for Render)
+matplotlib>=3.8.0
+mplfinance>=0.12.9b0
+reportlab>=4.0.0
