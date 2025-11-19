@@ -365,7 +365,7 @@ export default function App() {
                         <input 
                             type="text" 
                             value={symbol}
-                            onChange={(e) => setSymbol(e.target.value)}
+                            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
                             onKeyDown={(e) => e.key === 'Enter' && fetchAnalysis()}
                             placeholder="CODE"
                             className="text-8xl font-black tracking-tighter w-full bg-transparent border-none outline-none placeholder:text-gray-200 focus:placeholder:text-transparent p-0 m-0 leading-none uppercase"
@@ -496,7 +496,7 @@ export default function App() {
                         <input 
                             type="text" 
                             value={symbol}
-                            onChange={(e) => setSymbol(e.target.value)}
+                            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
                             onKeyDown={(e) => e.key === 'Enter' && fetchAnalysis()}
                             placeholder="TICKER"
                             className="text-9xl font-black tracking-tighter text-center bg-transparent border-none outline-none text-gray-300 focus:text-black transition-colors placeholder:text-gray-100 uppercase w-full max-w-4xl"

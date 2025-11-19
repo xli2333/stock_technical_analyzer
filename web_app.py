@@ -84,10 +84,10 @@ def analyze():
     try:
         if request.method == 'POST':
              data = request.get_json(force=True)
-             symbol = (data.get('symbol') or '').strip()
+             symbol = (data.get('symbol') or '').strip().upper()
              period = (data.get('period') or 'daily').strip()
         else:
-             symbol = (request.args.get('symbol') or '').strip()
+             symbol = (request.args.get('symbol') or '').strip().upper()
              period = (request.args.get('period') or 'daily').strip()
 
         if not symbol:
@@ -352,7 +352,7 @@ def _generate_pdf_report(analyzer, pdf_path: str, chart_png_path: str):
 
 @app.route('/export_pdf')
 def export_pdf():
-    symbol = (request.args.get('symbol') or '').strip()
+    symbol = (request.args.get('symbol') or '').strip().upper()
     if not symbol:
         return jsonify({'error': 'missing symbol'}), 400
 
