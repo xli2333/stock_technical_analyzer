@@ -312,8 +312,8 @@ export default function App() {
     setError('');
     setResult(null); // Clear previous result
     
-    // Determine API Base URL from environment or default to relative
-    const apiBase = import.meta.env.VITE_API_URL || ''; 
+    // Determine API Base URL from environment or use hardcoded fallback for Render
+    const apiBase = import.meta.env.VITE_API_URL || 'https://stock-technical-analyzer.onrender.com'; 
     const url = `${apiBase}/analyze?symbol=${symbol}&period=${period}`;
 
     try {
