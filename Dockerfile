@@ -26,4 +26,5 @@ EXPOSE 10000
 
 # Run the application with Gunicorn
 # Listen on 0.0.0.0 with the port defined in environment variable
-CMD gunicorn --bind 0.0.0.0:$PORT web_app:app
+# Increase timeout to 120s to allow for slow data fetching
+CMD gunicorn --bind 0.0.0.0:$PORT --timeout 120 web_app:app

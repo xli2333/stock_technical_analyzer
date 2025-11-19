@@ -141,28 +141,26 @@ class DataFetcher:
     def get_stock_info(self, symbol: str) -> Optional[dict]:
         """
         Fetch stock basic info (Name, Code).
+        Currently simplified to return symbol as name to avoid timeout 
+        caused by fetching full A-share list.
         """
         # 美股直接返回代码
         if not symbol.isdigit():
              return {'code': symbol, 'name': symbol}
 
-        # A股尝试查询名称
-        try:
-            # ak.stock_info_a_code_name() 可能会比较慢或失败，可以考虑缓存或简化
-            all_stocks = ak.stock_info_a_code_name()
-            stock_info = all_stocks[all_stocks['code'] == symbol]
-
-            if len(stock_info) == 0:
-                return {'code': symbol, 'name': symbol}
-
-            return {
-                'code': symbol,
-                'name': stock_info.iloc[0]['name'],
-            }
-
-        except Exception as e:
-            print(f"[!] Info fetch error: {e}")
-            return {'code': symbol, 'name': symbol}
+        # A股直接返回代码 (暂时跳过全量查询以优化速度)
+        return {'code': symbol, 'name': symbol}
+        
+        # Legacy code commented out for performance
+        # try:
+        #     all_stocks = ak.stock_info_a_code_name()
+        #     stock_info = all_stocks[all_stocks['code'] == symbol]
+        #     if len(stock_info) == 0:
+        #         return {'code': symbol, 'name': symbol}
+        #     return {'code': symbol, 'name': stock_info.iloc[0]['name']}
+        # except Exception as e:
+        #     print(f"[!] Info fetch error: {e}")
+        #     return {'code': symbol, 'name': symbol}
 
     def get_stock_list(self) -> pd.DataFrame:
         """
