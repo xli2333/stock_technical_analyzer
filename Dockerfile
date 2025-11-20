@@ -4,13 +4,10 @@ FROM python:3.12-slim
 # Install system dependencies
 # - fonts-wqy-microhei: Chinese font for PDF generation
 # - gcc, libc-dev: Build tools for some python packages
-# - nodejs, npm: Required by akshare (execjs) for handling JS encryption in some data sources
 RUN apt-get update && apt-get install -y \
     fonts-wqy-microhei \
     fontconfig \
     gcc \
-    nodejs \
-    npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory

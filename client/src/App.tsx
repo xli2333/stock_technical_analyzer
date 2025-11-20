@@ -43,88 +43,38 @@ interface AnalysisResult {
 
 // --- Components ---
 
-// Big Swiss Gauge - Premium SVG Edition
 function BigSwissGauge({ score }: { score: number }) {
-  // Score: -100 to 100
-  // Visual mapping: -100 -> -90deg (Left), 0 -> 0deg (Top), 100 -> 90deg (Right)
-  // We rotate the whole coordinate system so 0 is top.
-  
   const radius = 80;
   const strokeWidth = 8;
-  
-  // Clamp score
   const safeScore = Math.max(-100, Math.min(100, score));
-  
-  // Angle for needle (deg)
-  // -100 -> -90
-  // 0 -> 0
-  // 100 -> 90
   const rotation = (safeScore / 100) * 90;
-
   const isPositive = safeScore >= 0;
   const color = isPositive ? '#CCFF00' : '#FF3333';
-  
-  // Arc Logic
-  // Describes a path for the colored segment starting from top (0deg) to needle pos
-  // SVG Arc: A rx ry x-axis-rotation large-arc-flag sweep-flag x y
-  // Top point: (100, 20) [since radius 80, center 100, stroke 8/2=4 offset? let's stick to simple math]
-  // Actual drawing radius = 80. Center (100, 100).
-  // Top point (0 deg relative to vertical): x=100, y=20
-  // Needle point: x = 100 + 80*sin(rad), y = 100 - 80*cos(rad)
-  
   const angleRad = (Math.abs(rotation) * Math.PI) / 180;
   const endX = 100 + (isPositive ? 1 : -1) * Math.sin(angleRad) * radius;
   const endY = 100 - Math.cos(angleRad) * radius;
-  
-  // Flag for arc > 180 deg (not possible here since max 90)
   const largeArcFlag = 0; 
-  const sweepFlag = isPositive ? 1 : 0; // 1 for clockwise (positive), 0 for ccw
-
-  const arcPath = Math.abs(safeScore) < 1 
-    ? "" // Hide if near zero
-    : `M 100 20 A ${radius} ${radius} 0 ${largeArcFlag} ${sweepFlag} ${endX} ${endY}`;
+  const sweepFlag = isPositive ? 1 : 0; 
+  const arcPath = Math.abs(safeScore) < 1 ? "" : `M 100 20 A ${radius} ${radius} 0 ${largeArcFlag} ${sweepFlag} ${endX} ${endY}`;
 
   return (
     <div className="w-full h-full min-h-[200px] flex flex-col items-center justify-center relative -translate-y-4 -translate-x-6">
-        
         <div className="relative w-[360px] h-[180px]">
             <svg viewBox="0 0 200 110" className="w-full h-full overflow-visible">
-                
-                {/* Definitions for gradients/shadows if needed (keeping it flat for Swiss) */}
-                
-                {/* 1. Track Background (Thin Gray Semicircle) */}
-                {/* From -90 (Left) to 90 (Right) */}
                 <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#F0F0F0" strokeWidth={strokeWidth} strokeLinecap="butt" />
-                
-                {/* 2. Active Color Arc (Dynamic) */}
                 <path d={arcPath} fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="butt" className="transition-all duration-1000 ease-out" />
-                
-                {/* 3. Scale Marks (Minimalist) */}
-                {/* -50 */}
                 <line x1="43.4" y1="43.4" x2="48" y2="48" stroke="black" strokeWidth="1" />
-                {/* +50 */}
                 <line x1="156.6" y1="43.4" x2="152" y2="48" stroke="black" strokeWidth="1" />
-                {/* 0 (Top) */}
                 <line x1="100" y1="10" x2="100" y2="18" stroke="black" strokeWidth="2" />
-
-                {/* 4. Needle (Tapered Geometry) */}
                 <g transform={`rotate(${rotation}, 100, 100)`} className="transition-transform duration-1000 cubic-bezier(0.2, 0.8, 0.2, 1)">
-                    {/* Needle Shape: Wide base at pivot, sharp point at tip */}
                     <path d="M 100 15 L 97 100 L 103 100 Z" fill="black" />
                 </g>
-                
-                {/* 5. Pivot Point (Cover needle base) */}
                 <circle cx="100" cy="100" r="6" fill="black" />
                 <circle cx="100" cy="100" r="2" fill="white" />
-
             </svg>
-            
-            {/* Labels Overlay (HTML for better text control) */}
             <div className="absolute bottom-0 left-0 text-[10px] font-bold text-gray-300 font-mono">-100</div>
             <div className="absolute bottom-0 right-0 text-[10px] font-bold text-gray-300 font-mono">+100</div>
         </div>
-
-        {/* Center Text Block */}
         <div className="flex flex-col items-center mt-2">
              <div className="text-5xl font-black tracking-tighter leading-none flex items-start">
                 <span className="text-2xl mt-1 opacity-50 mr-1">{score > 0 ? '+' : ''}</span>
@@ -136,15 +86,11 @@ function BigSwissGauge({ score }: { score: number }) {
 }
 
 function SignalGrid({ signals }: { signals: Record<string, Signal> }) {
-    // Filter & Sort
-    const buySignals = Object.entries(signals).filter(([_, s]) => s.signal === 'buy')
-        .sort((a, b) => b[1].strength - a[1].strength);
-    const sellSignals = Object.entries(signals).filter(([_, s]) => s.signal === 'sell')
-        .sort((a, b) => b[1].strength - a[1].strength);
+    const buySignals = Object.entries(signals).filter(([_, s]) => s.signal === 'buy').sort((a, b) => b[1].strength - a[1].strength);
+    const sellSignals = Object.entries(signals).filter(([_, s]) => s.signal === 'sell').sort((a, b) => b[1].strength - a[1].strength);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mt-12">
-            {/* Buy Column */}
             <div>
                 <h3 className="text-4xl font-black tracking-tighter mb-6 flex items-center gap-4">
                     BUY
@@ -162,7 +108,6 @@ function SignalGrid({ signals }: { signals: Record<string, Signal> }) {
                                 </div>
                                 <div className="flex flex-col items-end">
                                     <div className="text-lg font-bold font-mono">{s.strength}%</div>
-                                    {/* Swiss Style Strength Bar: Simple black blocks */}
                                     <div className="flex gap-1 mt-1">
                                         {[...Array(5)].map((_, i) => (
                                             <div key={i} className={cn("w-2 h-2", i < (s.strength/20) ? "bg-neon" : "bg-[#E5E5E5]")} />
@@ -178,8 +123,6 @@ function SignalGrid({ signals }: { signals: Record<string, Signal> }) {
                     {buySignals.length === 0 && <div className="text-gray-400 font-mono">NO DATA</div>}
                 </div>
             </div>
-
-            {/* Sell Column */}
             <div>
                 <h3 className="text-4xl font-black tracking-tighter mb-6 flex items-center gap-4 text-gray-400">
                     SELL
@@ -216,7 +159,6 @@ function SignalGrid({ signals }: { signals: Record<string, Signal> }) {
     )
 }
 
-// StockChart Component - Handles Chart Lifecycle
 function StockChart({ ohlcv }: { ohlcv: AnalysisResult['ohlcv'] }) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -224,7 +166,6 @@ function StockChart({ ohlcv }: { ohlcv: AnalysisResult['ohlcv'] }) {
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
-
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: '#FFFFFF' },
@@ -232,40 +173,22 @@ function StockChart({ ohlcv }: { ohlcv: AnalysisResult['ohlcv'] }) {
         fontSize: 11,
         fontFamily: "'Inter', sans-serif",
       },
-      grid: {
-        vertLines: { color: '#F0F0F0' }, 
-        horzLines: { color: '#F0F0F0' },
-      },
+      grid: { vertLines: { color: '#F0F0F0' }, horzLines: { color: '#F0F0F0' } },
       width: chartContainerRef.current.clientWidth,
       height: 400,
       autoSize: true,
-      rightPriceScale: {
-          borderColor: '#000000', 
-          borderVisible: true,
-      },
-      timeScale: {
-          borderColor: '#000000',
-          borderVisible: true,
-      },
+      rightPriceScale: { borderColor: '#000000', borderVisible: true },
+      timeScale: { borderColor: '#000000', borderVisible: true },
       crosshair: {
           vertLine: { color: '#CCFF00', width: 2, labelBackgroundColor: '#000' },
           horzLine: { color: '#CCFF00', width: 2, labelBackgroundColor: '#000' },
       }
     });
-
     const candlestickSeries = chart.addCandlestickSeries({
-        upColor: '#CCFF00', 
-        downColor: '#000000',
-        borderVisible: true,
-        borderColor: '#000000',
-        wickUpColor: '#000000',
-        wickDownColor: '#000000',
+        upColor: '#CCFF00', downColor: '#000000', borderVisible: true, borderColor: '#000000', wickUpColor: '#000000', wickDownColor: '#000000',
     });
-
     chartRef.current = chart;
     candleSeriesRef.current = candlestickSeries;
-
-    // Robust Resizing using ResizeObserver
     const resizeObserver = new ResizeObserver((entries) => {
         for (const entry of entries) {
             if (entry.contentRect.width > 0) {
@@ -274,21 +197,13 @@ function StockChart({ ohlcv }: { ohlcv: AnalysisResult['ohlcv'] }) {
         }
     });
     resizeObserver.observe(chartContainerRef.current);
-
-    return () => {
-      resizeObserver.disconnect();
-      chart.remove();
-    };
+    return () => { resizeObserver.disconnect(); chart.remove(); };
   }, []);
 
   useEffect(() => {
     if (ohlcv && candleSeriesRef.current && chartRef.current) {
         const data = ohlcv.map((item) => ({
-            time: item.date,
-            open: item.open,
-            high: item.high,
-            low: item.low,
-            close: item.close,
+            time: item.date, open: item.open, high: item.high, low: item.low, close: item.close,
         }));
         candleSeriesRef.current.setData(data);
         chartRef.current.timeScale().fitContent();
@@ -307,20 +222,15 @@ export default function App() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState('');
   
-  // Determine API Base URL from environment or use hardcoded fallback for Render
   const apiBase = import.meta.env.VITE_API_URL || 'https://stock-technical-analyzer.onrender.com'; 
 
   const fetchAnalysis = async () => {
     setLoading(true);
     setError('');
-    setResult(null); // Clear previous result
-    
+    setResult(null);
     const url = `${apiBase}/analyze?symbol=${symbol}&period=${period}`;
-
     try {
       const res = await fetch(url);
-      
-      // Handle HTTP errors (like 400, 500, 504 Gateway Timeout)
       if (!res.ok) {
         const contentType = res.headers.get("content-type");
         if (contentType && contentType.indexOf("application/json") !== -1) {
@@ -331,7 +241,6 @@ export default function App() {
             throw new Error(`Request failed (${res.status}): ${text.substring(0, 100)}...`);
         }
       }
-
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setResult(data);
@@ -344,16 +253,13 @@ export default function App() {
   };
 
   return (
-    // Vertical Scrolling Container, Centered Content
     <div className="min-h-screen bg-white text-black font-sans selection:bg-neon selection:text-black">
-        
-        {/* Main Container - Max Width for readability (Swiss Style Grid) */}
         <div className="max-w-5xl mx-auto px-6 py-12">
             
             {/* --- 1. Header Section --- */}
             <header className="mb-16 grid grid-cols-12 gap-4 items-end">
                 
-                {/* Brand / Title - Small & Functional */}
+                {/* Brand / Title */}
                 <div className="col-span-12 flex justify-between border-b-4 border-black pb-4 mb-8">
                     <h1 className="text-lg font-bold tracking-tighter text-black leading-none">StockTech</h1>
                     <div className="text-sm font-mono">VOL. 2025 / MASTER ED.</div>
@@ -425,16 +331,8 @@ export default function App() {
                             Fetching data from Akshare API... This may take up to 10-20 seconds.
                         </div>
                     )}
-                    {/* Display 'error' state if it exists. Note that 'error' is not defined in this scope in the original snippet, 
-                        assuming it's a state variable like [error, setError] = useState(''). 
-                        Let's ensure we use the state variable 'error' if it was defined in the component.
-                        Wait, the original code had `const [, setError] = useState('');` which ignored the error state value.
-                        I need to fix the state definition first.
-                    */}
                  </div>
             )}
-
-
 
             {/* --- 2. Dashboard Content --- */}
             {result ? (
@@ -480,14 +378,6 @@ export default function App() {
                         <div className="flex justify-between items-end mb-4">
                             <h2 className="text-2xl font-black tracking-tight">PRICE ACTION</h2>
                             <div className="flex items-center gap-4">
-                                {/* 
-                                <button 
-                                    onClick={() => window.open(`${apiBase}/export_pdf?symbol=${result.stock_info.code}&period=${period}`,'_blank')}
-                                    className="bg-black text-white text-xs font-bold uppercase px-4 py-2 hover:bg-neon hover:text-black transition-colors"
-                                >
-                                    EXPORT PDF
-                                </button>
-                                */}
                                 <div className="text-xs font-mono text-gray-400">OHLCV / {period.toUpperCase()}</div>
                             </div>
                         </div>

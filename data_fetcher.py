@@ -172,27 +172,6 @@ class DataFetcher:
                     print(f"Akshare CN (Eastmoney) fetch error: {e}")
                     df = None
 
-                # === A股接口 (Method B: Sina / ak.stock_zh_a_daily) ===
-                # Fallback for "No historical data" or connection errors (common on Cloud IPs)
-                if (df is None or df.empty) and period == 'daily':
-                    print(f"Eastmoney failed. Attempting fallback to Sina for {symbol}...")
-                    try:
-                        # Sina requires prefixes: sh600000, sz000001
-                        # 6xx -> sh, 0xx/3xx -> sz, 4xx/8xx -> bj
-                        sina_sym = symbol
-                        if symbol.startswith('6'): sina_sym = f"sh{symbol}"
-                        elif symbol.startswith(('0', '3')): sina_sym = f"sz{symbol}"
-                        elif symbol.startswith(('4', '8')): sina_sym = f"bj{symbol}"
-                        
-                        df = ak.stock_zh_a_daily(
-                            symbol=sina_sym,
-                            start_date=start_date_str,
-                            end_date=end_date_str,
-                            adjust=adjust
-                        )
-                    except Exception as e2:
-                        print(f"Akshare CN (Sina) fetch error: {e2}")
-
                 if df is not None and not df.empty:
                     # 统一列名
                     # Eastmoney returns Chinese columns, Sina returns English.
