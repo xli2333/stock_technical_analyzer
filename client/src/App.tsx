@@ -305,15 +305,16 @@ export default function App() {
   const [period, setPeriod] = useState('daily');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [error, setError] = useState(''); // Fixed destructuring to use 'error'
+  const [error, setError] = useState('');
   
+  // Determine API Base URL from environment or use hardcoded fallback for Render
+  const apiBase = import.meta.env.VITE_API_URL || 'https://stock-technical-analyzer.onrender.com'; 
+
   const fetchAnalysis = async () => {
     setLoading(true);
     setError('');
     setResult(null); // Clear previous result
     
-    // Determine API Base URL from environment or use hardcoded fallback for Render
-    const apiBase = import.meta.env.VITE_API_URL || 'https://stock-technical-analyzer.onrender.com'; 
     const url = `${apiBase}/analyze?symbol=${symbol}&period=${period}`;
 
     try {
@@ -359,7 +360,7 @@ export default function App() {
                 </div>
 
                 {/* Search Input - Bold & Massive */}
-                <div className="col-span-12 md:col-span-6 lg:col-span-8">
+                <div className="col-span-12 lg:col-span-6">
                      <div className="flex items-baseline gap-4">
                         <span className="text-xl font-bold text-gray-400">#</span>
                         <input 
@@ -368,7 +369,7 @@ export default function App() {
                             onChange={(e) => setSymbol(e.target.value.toUpperCase())}
                             onKeyDown={(e) => e.key === 'Enter' && fetchAnalysis()}
                             placeholder="CODE"
-                            className="text-8xl font-black tracking-tighter w-full bg-transparent border-none outline-none placeholder:text-gray-200 focus:placeholder:text-transparent p-0 m-0 leading-none uppercase"
+                            className="text-7xl font-black tracking-tighter w-full bg-transparent border-none outline-none placeholder:text-gray-200 focus:placeholder:text-transparent p-0 m-0 leading-none uppercase"
                         />
                      </div>
                      <div className="flex gap-4 mt-4">
@@ -393,8 +394,8 @@ export default function App() {
 
                 {/* Key Metrics Display */}
                 {result && (
-                    <div className="col-span-12 md:col-span-6 lg:col-span-4 flex flex-col items-end justify-end text-right">
-                        <div className="text-6xl font-black tracking-tighter leading-none">
+                    <div className="col-span-12 lg:col-span-6 flex flex-col items-end justify-end text-right">
+                        <div className="text-7xl font-black tracking-tighter leading-none">
                             {result.price_info.close.toFixed(2)}
                         </div>
                         <div className={cn("text-xl font-bold mt-2 bg-black text-white px-2 inline-block", 
@@ -478,7 +479,17 @@ export default function App() {
                     <div className="mb-16">
                         <div className="flex justify-between items-end mb-4">
                             <h2 className="text-2xl font-black tracking-tight">PRICE ACTION</h2>
-                            <div className="text-xs font-mono text-gray-400">OHLCV / {period.toUpperCase()}</div>
+                            <div className="flex items-center gap-4">
+                                {/* 
+                                <button 
+                                    onClick={() => window.open(`${apiBase}/export_pdf?symbol=${result.stock_info.code}&period=${period}`,'_blank')}
+                                    className="bg-black text-white text-xs font-bold uppercase px-4 py-2 hover:bg-neon hover:text-black transition-colors"
+                                >
+                                    EXPORT PDF
+                                </button>
+                                */}
+                                <div className="text-xs font-mono text-gray-400">OHLCV / {period.toUpperCase()}</div>
+                            </div>
                         </div>
                         <div className="border-4 border-black p-1 bg-white">
                             <StockChart ohlcv={result.ohlcv} />

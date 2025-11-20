@@ -19,45 +19,11 @@ import numpy as np
 
 from flask_cors import CORS
 
-# Optional plotting/PDF deps
-try:
-    import mplfinance as mpf
-    from reportlab.lib.pagesizes import A4
-    from reportlab.pdfgen import canvas
-    from reportlab.lib.units import cm
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.pdfbase.ttfonts import TTFont
-    HAVE_REPORT = True
-except Exception:
-    HAVE_REPORT = False
+# PDF reporting is disabled for local testing.
+HAVE_REPORT = False
 
 # Configure Chinese Fonts
 CHINESE_FONT = 'Helvetica'  # Default fallback
-if HAVE_REPORT:
-    try:
-        # Strategy for Render / Docker: Use system installed fonts (e.g. WenQuanYi Micro Hei)
-        # Common paths for fonts on Linux
-        font_paths = [
-            '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
-            '/usr/share/fonts/truetype/wqy/wqy-microhei.ttf',
-            'SimHei.ttf' # Fallback to local file if exists
-        ]
-        
-        found_font = None
-        for path in font_paths:
-            if os.path.exists(path):
-                found_font = path
-                break
-        
-        if found_font:
-            pdfmetrics.registerFont(TTFont('WenQuanYi', found_font))
-            CHINESE_FONT = 'WenQuanYi'
-            print(f"Info: Registered Chinese font from {found_font}")
-        else:
-            print("Info: No Chinese font found, using default Helvetica")
-            
-    except Exception as e:
-        print(f"Warning: Could not register Chinese font: {e}")
 
 
 app = Flask(__name__, static_folder='static', static_url_path='')
@@ -350,41 +316,41 @@ def _generate_pdf_report(analyzer, pdf_path: str, chart_png_path: str):
     c.showPage(); c.save()
 
 
-@app.route('/export_pdf')
-def export_pdf():
-    symbol = (request.args.get('symbol') or '').strip().upper()
-    if not symbol:
-        return jsonify({'error': 'missing symbol'}), 400
+# @app.route('/export_pdf')
+# def export_pdf():
+#     symbol = (request.args.get('symbol') or '').strip().upper()
+#     if not symbol:
+#         return jsonify({'error': 'missing symbol'}), 400
 
-    if not HAVE_REPORT:
-        return jsonify({'error': 'reportlab/mplfinance not available on server'}), 500
+#     if not HAVE_REPORT:
+#         return jsonify({'error': 'reportlab/mplfinance not available on server'}), 500
 
-    try:
-        from analyzer import StockAnalyzer
-    except Exception as e:
-        return jsonify({'error': f'Missing backend dependency: {e}'}), 500
+#     try:
+#         from analyzer import StockAnalyzer
+#     except Exception as e:
+#         return jsonify({'error': f'Missing backend dependency: {e}'}), 500
 
-    analyzer = StockAnalyzer(use_proxy=True)
-    if not analyzer.analyze(symbol, days=120):
-        return jsonify({'error': 'analysis failed, check symbol or network'}), 400
+#     analyzer = StockAnalyzer(use_proxy=True)
+#     if not analyzer.analyze(symbol, days=120):
+#         return jsonify({'error': 'analysis failed, check symbol or network'}), 400
 
-    # Use temporary directory for Vercel/Cloud compatibility
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        ts = datetime.now().strftime('%Y%m%d_%H%M%S')
-        base = f"{symbol}_{ts}"
-        chart_path = os.path.join(tmpdirname, f"{base}_chart.png")
-        pdf_path = os.path.join(tmpdirname, f"{base}_report.pdf")
+#     # Use temporary directory for Vercel/Cloud compatibility
+#     with tempfile.TemporaryDirectory() as tmpdirname:
+#         ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+#         base = f"{symbol}_{ts}"
+#         chart_path = os.path.join(tmpdirname, f"{base}_chart.png")
+#         pdf_path = os.path.join(tmpdirname, f"{base}_report.pdf")
 
-        try:
-            _generate_chart_png(analyzer, chart_path)
-            _generate_pdf_report(analyzer, pdf_path, chart_path)
+#         try:
+#             _generate_chart_png(analyzer, chart_path)
+#             _generate_pdf_report(analyzer, pdf_path, chart_path)
 
-            # Read file into memory to serve it
-            return send_file(pdf_path, as_attachment=True, download_name=f"{base}_report.pdf")
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            return jsonify({'error': f'PDF Generation Error: {str(e)}'}), 500
+#             # Read file into memory to serve it
+#             return send_file(pdf_path, as_attachment=True, download_name=f"{base}_report.pdf")
+#         except Exception as e:
+#             import traceback
+#             traceback.print_exc()
+#             return jsonify({'error': f'PDF Generation Error: {str(e)}'}), 500
 
 
 if __name__ == '__main__':
