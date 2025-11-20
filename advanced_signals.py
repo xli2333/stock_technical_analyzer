@@ -168,11 +168,16 @@ class AdvancedSignalGenerator:
         chikou = self.extra.get('Ichimoku_Chikou')
         if any(x is None for x in [tenkan, kijun, sa, sb]):
             return {'signal': 'N/A', 'strength': 0, 'description': '数据不足', 'category': 'trend'}
+        
+        # Check for NaNs at the current index before computation to avoid RuntimeWarnings
+        if np.isnan(sa[-1]) or np.isnan(sb[-1]):
+            return {'signal': 'N/A', 'strength': 0, 'description': '一目云数据不足 (NaN)', 'category': 'trend'}
+            
         price = self.close[-1]
         cloud_top = np.nanmax([sa[-1], sb[-1]])
         cloud_bottom = np.nanmin([sa[-1], sb[-1]])
 
-        # Handle NaN values in cloud
+        # Handle NaN values in cloud result (double check)
         if np.isnan(cloud_top) or np.isnan(cloud_bottom):
             return {'signal': 'N/A', 'strength': 0, 'description': '一目云数据不足', 'category': 'trend'}
 

@@ -72,6 +72,7 @@ def analyze():
         
         if not analyzer.analyze(symbol, days=days, period=period):
             error_msg = analyzer.last_error or 'Analysis failed, check symbol or network'
+            print(f"[Error] /analyze failed for {symbol}: {error_msg}")
             return jsonify({'error': error_msg}), 400
 
         # OHLCV for charting
